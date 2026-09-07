@@ -1,0 +1,30 @@
+[package]
+name = "bmol-designs"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+rust-version = "1.85"
+authors = ["Erizeez <zhangyongcheng@sjtu.edu.cn>"]
+repository = "https://github.com/Erizeez/bmol-designs"
+homepage = "https://github.com/Erizeez/bmol-designs"
+description = "Framework-agnostic Apple-inspired design tokens, glass theme metrics, and styling primitives."
+readme = "README.md"
+keywords = ["design-system", "design-tokens", "liquid-glass", "squircle", "macos"]
+categories = ["gui"]
+
+[dependencies]
+liquid-rs = { path = "../liquid-rs/crates/liquid-rs", version = "0.1.0" }
+squircle-rs = { git = "https://github.com/Erizeez/squircle-rs", tag = "v0.1.1" }
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+missing_docs = "allow"
+
+[lints.clippy]
+all = "warn"
+pedantic = "warn"
+float_cmp = "allow"
+
+[profile.dev]
+opt-level = 2
