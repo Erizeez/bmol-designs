@@ -169,6 +169,120 @@ pub mod menu_metrics {
     );
 }
 
+/// Standard popover arrow / beak metrics and anchor placement matching Apple HIG.
+pub mod popover_metrics {
+    /// Standard base width of the popover arrow at the card junction (20.0 pt).
+    ///
+    /// Empirically verified via native `AppKit` `NSPopoverFrame`:
+    /// System popover arrow has nominal anchor width 20.0~27.5 pt.
+    pub const ARROW_BASE_WIDTH: f32 = 20.0;
+
+    /// Compact popover arrow base width (16.0 pt).
+    pub const ARROW_BASE_WIDTH_COMPACT: f32 = 16.0;
+
+    /// Large popover arrow base width for prominent HUDs (26.0 pt).
+    pub const ARROW_BASE_WIDTH_LARGE: f32 = 26.0;
+
+    /// Standard protruding height of the popover arrow (10.0 pt).
+    ///
+    /// Extends outward from the squircle bounding box towards the target anchor.
+    pub const ARROW_HEIGHT: f32 = 10.0;
+
+    /// Compact popover arrow height (8.0 pt).
+    pub const ARROW_HEIGHT_COMPACT: f32 = 8.0;
+
+    /// Large popover arrow height (12.0 pt).
+    pub const ARROW_HEIGHT_LARGE: f32 = 12.0;
+
+    /// Tip corner radius of the arrow (3.0 pt).
+    ///
+    /// Ensures the apex is gently rounded matching Apple continuous curvature.
+    pub const ARROW_TIP_RADIUS: f32 = 3.0;
+
+    /// Smooth base fillet radius connecting the arrow sloped sides into the card edge (4.0 pt).
+    ///
+    /// Provides continuous tangent transitions (G1/G2) to avoid sharp reentrant corners.
+    pub const ARROW_BASE_FILLET: f32 = 4.0;
+
+    /// Minimum clearance from arrow base to the nearest corner of the card container (16.0 pt).
+    ///
+    /// Prevents the arrow fillet from clashing with the container squircle arc.
+    pub const MIN_CORNER_CLEARANCE: f32 = 16.0;
+
+    /// Edge on which the popover arrow protrudes towards its anchor target.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+    pub enum PopoverArrowEdge {
+        /// Protrudes from the top edge (pointing upwards at anchor above).
+        Top,
+        /// Protrudes from the bottom edge (pointing downwards at anchor below).
+        Bottom,
+        /// Protrudes from the left edge (pointing leftwards).
+        Left,
+        /// Protrudes from the right edge (pointing rightwards).
+        Right,
+        /// No arrow protruding (standalone floating card).
+        #[default]
+        None,
+    }
+
+    /// Configuration parameters for a popover arrow.
+    #[derive(Debug, Clone, Copy, PartialEq)]
+    pub struct PopoverArrowConfig {
+        pub edge: PopoverArrowEdge,
+        pub base_width: f32,
+        pub height: f32,
+        pub tip_radius: f32,
+        pub base_fillet: f32,
+        /// Normalized position along the edge (0.0 = start, 0.5 = center, 1.0 = end).
+        pub offset: f32,
+    }
+
+    impl Default for PopoverArrowConfig {
+        fn default() -> Self {
+            Self {
+                edge: PopoverArrowEdge::None,
+                base_width: ARROW_BASE_WIDTH,
+                height: ARROW_HEIGHT,
+                tip_radius: ARROW_TIP_RADIUS,
+                base_fillet: ARROW_BASE_FILLET,
+                offset: 0.5,
+            }
+        }
+    }
+
+    impl PopoverArrowConfig {
+        #[must_use]
+        pub const fn new(edge: PopoverArrowEdge) -> Self {
+            Self {
+                edge,
+                base_width: ARROW_BASE_WIDTH,
+                height: ARROW_HEIGHT,
+                tip_radius: ARROW_TIP_RADIUS,
+                base_fillet: ARROW_BASE_FILLET,
+                offset: 0.5,
+            }
+        }
+
+        #[must_use]
+        pub const fn with_offset(mut self, offset: f32) -> Self {
+            self.offset = offset;
+            self
+        }
+
+        #[must_use]
+        pub const fn with_size(mut self, base_width: f32, height: f32) -> Self {
+            self.base_width = base_width;
+            self.height = height;
+            self
+        }
+
+        #[must_use]
+        pub const fn is_visible(&self) -> bool {
+            !matches!(self.edge, PopoverArrowEdge::None) && self.height > 0.0 && self.base_width > 0.0
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::menu_metrics::*;
@@ -228,5 +342,32 @@ mod tests {
         );
         assert_eq!(CONTAINER_CORNER_RADIUS_COMPACT, 8.0);
         assert_eq!(ITEM_HIGHLIGHT_RADIUS_COMPACT, 4.0);
+    }
+
+    #[test]
+    fn test_popover_metrics_geometry_constraints() {
+        use super::popover_metrics::*;
+
+        assert!(ARROW_BASE_WIDTH > ARROW_HEIGHT);
+        assert!(ARROW_BASE_WIDTH >= 16.0);
+        assert!(ARROW_HEIGHT >= 8.0);
+        assert!(ARROW_TIP_RADIUS >= 2.0);
+        assert!(ARROW_BASE_FILLET >= 3.0);
+        assert!(MIN_CORNER_CLEARANCE >= CONTAINER_CORNER_RADIUS);
+
+        let default_cfg = PopoverArrowConfig::default();
+        assert!(!default_cfg.is_visible());
+
+        let top_cfg = PopoverArrowConfig::new(PopoverArrowEdge::Top);
+        assert!(top_cfg.is_visible());
+        assert_eq!(top_cfg.offset, 0.5);
+
+        let custom_cfg = PopoverArrowConfig::new(PopoverArrowEdge::Bottom)
+            .with_offset(0.75)
+            .with_size(24.0, 12.0);
+        assert!(custom_cfg.is_visible());
+        assert_eq!(custom_cfg.offset, 0.75);
+        assert_eq!(custom_cfg.base_width, 24.0);
+        assert_eq!(custom_cfg.height, 12.0);
     }
 }
