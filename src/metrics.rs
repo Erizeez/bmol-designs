@@ -56,3 +56,45 @@ pub mod scrollbar {
     pub const MIN_THUMB_LENGTH: f32 = 24.0;
     pub const INSET: f32 = 3.0;
 }
+
+/// Standard context menu and popover metrics matching Apple HIG.
+pub mod menu_metrics {
+    /// Corner radius of the floating menu container (strictly 8.0 pt).
+    pub const CONTAINER_CORNER_RADIUS: f32 = 8.0;
+
+    /// Inner padding around the menu items list (strictly 5.0 pt).
+    pub const CONTAINER_PADDING: f32 = 5.0;
+
+    /// Standard single-line menu item row height (24.0 pt).
+    pub const ITEM_HEIGHT: f32 = 24.0;
+
+    /// Compact single-line menu item row height (20.0 pt).
+    pub const ITEM_HEIGHT_COMPACT: f32 = 20.0;
+
+    /// Corner radius of the selection highlight pill (4.5 pt).
+    pub const ITEM_HIGHLIGHT_RADIUS: f32 = 4.5;
+
+    /// Horizontal padding inside each menu item (8.0 pt).
+    pub const ITEM_HORIZONTAL_PADDING: f32 = 8.0;
+
+    /// Width reserved for the leading icon or checkmark slot (18.0 pt).
+    pub const LEADING_SLOT_WIDTH: f32 = 18.0;
+
+    /// Icon display size inside a menu item (14.0 pt).
+    pub const ICON_SIZE: f32 = 14.0;
+
+    /// Height of a menu separator line (1.0 pt).
+    pub const SEPARATOR_HEIGHT: f32 = 1.0;
+
+    /// Vertical margin above and below a separator line (5.0 pt).
+    pub const SEPARATOR_MARGIN_V: f32 = 5.0;
+
+    /// Default recommended minimum width for context menus (180.0 pt).
+    pub const MIN_WIDTH: f32 = 180.0;
+
+    /// Default recommended width for general desktop context menus (220.0 pt).
+    pub const DEFAULT_WIDTH: f32 = 220.0;
+
+    /// Section header label height (18.0 pt).
+    pub const SECTION_HEADER_HEIGHT: f32 = 18.0;
+}
