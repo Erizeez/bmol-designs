@@ -97,4 +97,77 @@ pub mod menu_metrics {
 
     /// Section header label height (18.0 pt).
     pub const SECTION_HEADER_HEIGHT: f32 = 18.0;
+
+    // =========================================================================
+    // Calibrated Physical Colorimetry (Ground Truth Measurement Data)
+    // =========================================================================
+
+    /// Calibrated opacity for Dark Mode context menu backdrops (202 / 255 ≈ 0.7922).
+    ///
+    /// Derived from physical measurement:
+    /// - On white background (255, 255, 255): measured RGB = (86, 86, 86)
+    /// - On black background (0, 0, 0): measured RGB = (33, 33, 33)
+    pub const DARK_MENU_OPACITY: f32 = 202.0 / 255.0;
+
+    /// Calibrated base RGB color for Dark Mode context menu (42, 42, 42).
+    pub const DARK_MENU_BASE_RGB: (u8, u8, u8) = (42, 42, 42);
+
+    /// Calibrated RGBA float components (r, g, b, a) for Dark Mode context menu.
+    pub const DARK_MENU_BASE_RGBA_F32: (f32, f32, f32, f32) = (
+        42.0 / 255.0,
+        42.0 / 255.0,
+        42.0 / 255.0,
+        DARK_MENU_OPACITY,
+    );
+
+    /// Calibrated opacity for Light Mode context menu backdrops (185 / 255 ≈ 0.7255).
+    ///
+    /// Derived from physical measurement:
+    /// - On white background (255, 255, 255): measured RGB = (255, 255, 255)
+    /// - On black background (0, 0, 0): measured RGB = (185, 185, 185)
+    pub const LIGHT_MENU_OPACITY: f32 = 185.0 / 255.0;
+
+    /// Calibrated base RGB color for Light Mode context menu (255, 255, 255).
+    pub const LIGHT_MENU_BASE_RGB: (u8, u8, u8) = (255, 255, 255);
+
+    /// Calibrated RGBA float components (r, g, b, a) for Light Mode context menu.
+    pub const LIGHT_MENU_BASE_RGBA_F32: (f32, f32, f32, f32) = (
+        1.0,
+        1.0,
+        1.0,
+        LIGHT_MENU_OPACITY,
+    );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::menu_metrics::*;
+
+    #[test]
+    fn test_menu_colorimetry_dark_mode_calibration() {
+        let (r, _, _, a) = DARK_MENU_BASE_RGBA_F32;
+        let base_val = r * 255.0;
+
+        // 1. Overlay on black background (0, 0, 0): C_out = base * a + 0 * (1 - a)
+        let black_out = base_val * a;
+        assert_eq!(black_out.round() as u8, 33);
+
+        // 2. Overlay on white background (255, 255, 255): C_out = base * a + 255 * (1 - a)
+        let white_out = base_val * a + 255.0 * (1.0 - a);
+        assert_eq!(white_out.round() as u8, 86);
+    }
+
+    #[test]
+    fn test_menu_colorimetry_light_mode_calibration() {
+        let (r, _, _, a) = LIGHT_MENU_BASE_RGBA_F32;
+        let base_val = r * 255.0;
+
+        // 1. Overlay on black background (0, 0, 0): C_out = 255 * a + 0
+        let black_out = base_val * a;
+        assert_eq!(black_out.round() as u8, 185);
+
+        // 2. Overlay on white background (255, 255, 255): C_out = 255 * a + 255 * (1 - a) = 255
+        let white_out = base_val * a + 255.0 * (1.0 - a);
+        assert_eq!(white_out.round() as u8, 255);
+    }
 }
