@@ -171,11 +171,10 @@ pub mod menu_metrics {
 
 /// Standard popover arrow / beak metrics and anchor placement matching Apple HIG.
 pub mod popover_metrics {
-    /// Standard base width of the popover arrow at the card junction (27.0 pt).
+    /// Standard base width of the popover arrow at the card junction (25.0 pt).
     ///
-    /// Empirically verified via native macOS Popover/Dock context menu measurements:
-    /// Physical base anchor span is exactly 54 px (27.0 pt) with 10.0 pt height (19.45 px).
-    pub const ARROW_BASE_WIDTH: f32 = 27.0;
+    /// Calibrated to Apple design specifications: 25.0 pt base span with 10.0 pt height.
+    pub const ARROW_BASE_WIDTH: f32 = 25.0;
 
     /// Compact popover arrow base width (20.0 pt).
     pub const ARROW_BASE_WIDTH_COMPACT: f32 = 20.0;
@@ -188,8 +187,8 @@ pub mod popover_metrics {
     /// Extends outward from the squircle bounding box towards the target anchor (20 px @2x).
     pub const ARROW_HEIGHT: f32 = 10.0;
 
-    /// Compact popover arrow height (8.0 pt).
-    pub const ARROW_HEIGHT_COMPACT: f32 = 8.0;
+    /// Compact popover arrow height (7.0 pt).
+    pub const ARROW_HEIGHT_COMPACT: f32 = 7.0;
 
     /// Large popover arrow height (12.0 pt).
     pub const ARROW_HEIGHT_LARGE: f32 = 12.0;
@@ -350,13 +349,13 @@ pub mod popover_metrics {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
     pub enum PopoverArrowPreset {
         /// Broad, concave flared popover arrow used in Dock context menus, Status Bar popovers,
-        /// and large content containers (Base 27.0 pt, Height 10.0 pt, Tip 1.8 pt, Fillet 5.5 pt).
+        /// and large content containers (Base 25.0 pt, Height 10.0 pt, Tip 1.8 pt, Fillet 5.0 pt).
         #[default]
         MenuWide,
         /// Standard `AppKit` / `SwiftUI` `NSPopover` system default (Base 27.5 pt, Height 13.0 pt, Tip 2.0 pt, Fillet 6.0 pt).
         AppKitStandard,
         /// Narrow, slender tooltip arrow used in Dock icon hover labels, Cartouche popovers,
-        /// and compact tooltips (Base 21.0 pt, Height 6.2 pt, Tip 1.0 pt, Fillet 4.5 pt).
+        /// and compact tooltips (Base 20.0 pt, Height 7.0 pt, Tip 1.0 pt, Fillet 4.0 pt).
         TooltipNarrow,
         /// Minimal subtle pointer for ultra-compact controls (Base 12.0 pt, Height 5.0 pt, Tip 1.0 pt, Fillet 2.5 pt).
         SubtleCompact,
@@ -367,9 +366,9 @@ pub mod popover_metrics {
         #[must_use]
         pub const fn metrics(self) -> (f32, f32, f32, f32) {
             match self {
-                Self::MenuWide => (ARROW_BASE_WIDTH, ARROW_HEIGHT, ARROW_TIP_RADIUS, ARROW_BASE_FILLET),
+                Self::MenuWide => (ARROW_BASE_WIDTH, ARROW_HEIGHT, ARROW_TIP_RADIUS, 5.0),
                 Self::AppKitStandard => (27.5, 13.0, 2.0, 6.0),
-                Self::TooltipNarrow => (21.0, 6.2, 1.0, 4.5),
+                Self::TooltipNarrow => (ARROW_BASE_WIDTH_COMPACT, ARROW_HEIGHT_COMPACT, 1.0, 4.0),
                 Self::SubtleCompact => (12.0, 5.0, 1.0, 2.5),
             }
         }
@@ -563,10 +562,10 @@ mod tests {
 
         // Verify presets
         let menu_wide = PopoverArrowPreset::MenuWide.metrics();
-        assert_eq!(menu_wide, (27.0, 10.0, 1.8, 5.5));
+        assert_eq!(menu_wide, (25.0, 10.0, 1.8, 5.0));
 
         let tooltip_narrow = PopoverArrowPreset::TooltipNarrow.metrics();
-        assert_eq!(tooltip_narrow, (21.0, 6.2, 1.0, 4.5));
+        assert_eq!(tooltip_narrow, (20.0, 7.0, 1.0, 4.0));
 
         let appkit_std = PopoverArrowPreset::AppKitStandard.metrics();
         assert_eq!(appkit_std, (27.5, 13.0, 2.0, 6.0));
@@ -575,8 +574,8 @@ mod tests {
         assert_eq!(subtle, (12.0, 5.0, 1.0, 2.5));
 
         let tooltip_cfg = PopoverArrowConfig::from_preset(PopoverArrowEdge::Bottom, PopoverArrowPreset::TooltipNarrow);
-        assert_eq!(tooltip_cfg.base_width, 21.0);
-        assert_eq!(tooltip_cfg.height, 6.2);
+        assert_eq!(tooltip_cfg.base_width, 20.0);
+        assert_eq!(tooltip_cfg.height, 7.0);
         assert_eq!(tooltip_cfg.tip_radius, 1.0);
         assert_eq!(tooltip_cfg.spline, TOOLTIP_NARROW_SPLINE);
 
