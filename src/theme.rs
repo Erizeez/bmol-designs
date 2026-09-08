@@ -267,8 +267,7 @@ impl UiTheme {
             },
             GlassRole::Toolbar => 0.54,
             GlassRole::InputField => 0.64,
-            GlassRole::SearchField => 0.72,
-            GlassRole::FloatingControl => 0.72,
+            GlassRole::SearchField | GlassRole::FloatingControl => 0.72,
         };
         material.shadow = match role {
             GlassRole::FloatingControl => ShadowStyle::elevated(),

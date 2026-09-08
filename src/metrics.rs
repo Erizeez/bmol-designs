@@ -27,7 +27,7 @@ pub mod traffic_lights {
 
 /// Standard window layout metrics, header heights, and sidebar widths.
 pub mod window_metrics {
-    /// Modern macOS unified toolbar/header height (e.g. System Settings AXToolbar, strictly 52.0 pt).
+    /// Modern macOS unified toolbar/header height (e.g. System Settings `AXToolbar`, strictly 52.0 pt).
     pub const FUSED_HEADER_HEIGHT: f32 = 52.0;
 
     /// Classic macOS standalone titlebar height (strictly 32.0 pt).
@@ -59,11 +59,29 @@ pub mod scrollbar {
 
 /// Standard context menu and popover metrics matching Apple HIG.
 pub mod menu_metrics {
-    /// Corner radius of the floating menu container (strictly 8.0 pt).
-    pub const CONTAINER_CORNER_RADIUS: f32 = 8.0;
+    /// Corner radius of the floating menu container in modern macOS Liquid Glass (strictly 12.0 pt).
+    ///
+    /// Empirically verified via native `AppKit` `NSPopupMenuWindow` runtime inspection:
+    /// - `CASDFElementLayer`: `cornerRadius = 12.0`, `cornerCurve = .continuous` (Apple Squircle)
+    /// - Clipping `CALayer`: `cornerRadius = 12.0`, `cornerCurve = .continuous`
+    ///
+    /// Adheres to Apple HIG Concentric Radius Formula:
+    /// `CONTAINER_CORNER_RADIUS` (12.0) = `ITEM_HIGHLIGHT_RADIUS` (7.0) + `CONTAINER_PADDING` (5.0)
+    pub const CONTAINER_CORNER_RADIUS: f32 = 12.0;
+
+    /// Classic macOS Big Sur / Monterey context menu container corner radius (10.0 pt).
+    pub const CONTAINER_CORNER_RADIUS_CLASSIC: f32 = 10.0;
+
+    /// Compact context menu container corner radius (8.0 pt).
+    pub const CONTAINER_CORNER_RADIUS_COMPACT: f32 = 8.0;
 
     /// Inner padding around the menu items list (strictly 5.0 pt).
+    ///
+    /// Verified via native `AppKit` `NSTableRowView`: first row y-offset = 5.0 pt, container padding = 5.0 pt.
     pub const CONTAINER_PADDING: f32 = 5.0;
+
+    /// Compact menu container padding (4.0 pt).
+    pub const CONTAINER_PADDING_COMPACT: f32 = 4.0;
 
     /// Standard single-line menu item row height (24.0 pt).
     pub const ITEM_HEIGHT: f32 = 24.0;
@@ -71,8 +89,20 @@ pub mod menu_metrics {
     /// Compact single-line menu item row height (20.0 pt).
     pub const ITEM_HEIGHT_COMPACT: f32 = 20.0;
 
-    /// Corner radius of the selection highlight pill (4.5 pt).
-    pub const ITEM_HIGHLIGHT_RADIUS: f32 = 4.5;
+    /// Corner radius of the selection highlight pill for modern Liquid Glass menus (7.0 pt).
+    ///
+    /// Empirically verified via native `AppKit` `NSRootMenuWindowBackgroundView` runtime inspection:
+    /// selection highlight `CALayer` has `cornerRadius = 7.0`.
+    ///
+    /// Satisfies Apple HIG Concentricity:
+    /// `ITEM_HIGHLIGHT_RADIUS` = `CONTAINER_CORNER_RADIUS` (12.0) - `CONTAINER_PADDING` (5.0) = 7.0 pt.
+    pub const ITEM_HIGHLIGHT_RADIUS: f32 = 7.0;
+
+    /// Classic selection highlight pill radius for macOS Big Sur (5.0 pt = 10.0 - 5.0).
+    pub const ITEM_HIGHLIGHT_RADIUS_CLASSIC: f32 = 5.0;
+
+    /// Compact selection highlight pill radius (4.0 pt = 8.0 - 4.0).
+    pub const ITEM_HIGHLIGHT_RADIUS_COMPACT: f32 = 4.0;
 
     /// Horizontal padding inside each menu item (8.0 pt).
     pub const ITEM_HORIZONTAL_PADDING: f32 = 8.0;
@@ -169,5 +199,34 @@ mod tests {
         // 2. Overlay on white background (255, 255, 255): C_out = 255 * a + 255 * (1 - a) = 255
         let white_out = base_val * a + 255.0 * (1.0 - a);
         assert_eq!(white_out.round() as u8, 255);
+    }
+
+    #[test]
+    fn test_menu_concentric_corner_radius_invariance() {
+        // 1. Modern Liquid Glass concentricity: R_outer = R_inner + Padding
+        assert_eq!(
+            CONTAINER_CORNER_RADIUS,
+            ITEM_HIGHLIGHT_RADIUS + CONTAINER_PADDING,
+            "Apple HIG concentricity violation: outer radius must equal inner radius plus padding"
+        );
+        assert_eq!(CONTAINER_CORNER_RADIUS, 12.0);
+        assert_eq!(ITEM_HIGHLIGHT_RADIUS, 7.0);
+        assert_eq!(CONTAINER_PADDING, 5.0);
+
+        // 2. Classic macOS Big Sur concentricity: 10.0 = 5.0 + 5.0
+        assert_eq!(
+            CONTAINER_CORNER_RADIUS_CLASSIC,
+            ITEM_HIGHLIGHT_RADIUS_CLASSIC + CONTAINER_PADDING
+        );
+        assert_eq!(CONTAINER_CORNER_RADIUS_CLASSIC, 10.0);
+        assert_eq!(ITEM_HIGHLIGHT_RADIUS_CLASSIC, 5.0);
+
+        // 3. Compact variant concentricity: 8.0 = 4.0 + 4.0
+        assert_eq!(
+            CONTAINER_CORNER_RADIUS_COMPACT,
+            ITEM_HIGHLIGHT_RADIUS_COMPACT + CONTAINER_PADDING_COMPACT
+        );
+        assert_eq!(CONTAINER_CORNER_RADIUS_COMPACT, 8.0);
+        assert_eq!(ITEM_HIGHLIGHT_RADIUS_COMPACT, 4.0);
     }
 }
