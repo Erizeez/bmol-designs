@@ -194,10 +194,11 @@ pub mod popover_metrics {
     /// Large popover arrow height (12.0 pt).
     pub const ARROW_HEIGHT_LARGE: f32 = 12.0;
 
-    /// Tip corner radius of the arrow (5.0 pt).
+    /// Tip corner radius of the arrow (1.8 pt).
     ///
-    /// Ensures the apex is a broad, gentle dome matching Apple continuous curvature.
-    pub const ARROW_TIP_RADIUS: f32 = 5.0;
+    /// Ensures the apex transitions smoothly while allowing the flanks to maintain
+    /// their signature concave (flared) silhouette rather than a bulging convex dome.
+    pub const ARROW_TIP_RADIUS: f32 = 1.8;
 
     /// Smooth base fillet radius connecting the arrow sloped sides into the card edge (5.5 pt).
     ///
@@ -228,16 +229,16 @@ pub mod popover_metrics {
     /// Preset styles for macOS popover and tooltip arrows matching system behaviors.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
     pub enum PopoverArrowPreset {
-        /// Broad, smooth dome popover arrow used in Dock context menus, Status Bar popovers,
-        /// and large content containers (Base 26.0 pt, Height 10.0 pt, Tip 5.0 pt).
+        /// Broad, concave flared popover arrow used in Dock context menus, Status Bar popovers,
+        /// and large content containers (Base 26.0 pt, Height 10.0 pt, Tip 1.8 pt, Fillet 5.5 pt).
         #[default]
         MenuWide,
-        /// Standard `AppKit` / `SwiftUI` `NSPopover` system default (Base 27.5 pt, Height 13.0 pt, Tip 5.0 pt).
+        /// Standard `AppKit` / `SwiftUI` `NSPopover` system default (Base 27.5 pt, Height 13.0 pt, Tip 2.0 pt, Fillet 6.0 pt).
         AppKitStandard,
         /// Narrow, slender tooltip arrow used in Dock icon hover labels, Cartouche popovers,
-        /// and compact tooltips (Base 16.0 pt, Height 7.0 pt, Tip 2.0 pt, Fillet 3.0 pt).
+        /// and compact tooltips (Base 16.0 pt, Height 7.0 pt, Tip 1.2 pt, Fillet 3.5 pt).
         TooltipNarrow,
-        /// Minimal subtle pointer for ultra-compact controls (Base 12.0 pt, Height 5.0 pt, Tip 1.5 pt).
+        /// Minimal subtle pointer for ultra-compact controls (Base 12.0 pt, Height 5.0 pt, Tip 1.0 pt, Fillet 2.5 pt).
         SubtleCompact,
     }
 
@@ -247,9 +248,9 @@ pub mod popover_metrics {
         pub const fn metrics(self) -> (f32, f32, f32, f32) {
             match self {
                 Self::MenuWide => (ARROW_BASE_WIDTH, ARROW_HEIGHT, ARROW_TIP_RADIUS, ARROW_BASE_FILLET),
-                Self::AppKitStandard => (27.5, 13.0, 5.0, 6.0),
-                Self::TooltipNarrow => (16.0, 7.0, 2.0, 3.0),
-                Self::SubtleCompact => (12.0, 5.0, 1.5, 2.0),
+                Self::AppKitStandard => (27.5, 13.0, 2.0, 6.0),
+                Self::TooltipNarrow => (16.0, 7.0, 1.2, 3.5),
+                Self::SubtleCompact => (12.0, 5.0, 1.0, 2.5),
             }
         }
     }
@@ -396,7 +397,7 @@ mod tests {
         assert!(ARROW_BASE_WIDTH > ARROW_HEIGHT);
         assert!(ARROW_BASE_WIDTH >= 16.0);
         assert!(ARROW_HEIGHT >= 8.0);
-        assert!(ARROW_TIP_RADIUS >= 2.0);
+        assert!(ARROW_TIP_RADIUS >= 1.0);
         assert!(ARROW_BASE_FILLET >= 3.0);
         assert!(MIN_CORNER_CLEARANCE >= CONTAINER_CORNER_RADIUS);
 
@@ -417,20 +418,20 @@ mod tests {
 
         // Verify presets
         let menu_wide = PopoverArrowPreset::MenuWide.metrics();
-        assert_eq!(menu_wide, (26.0, 10.0, 5.0, 5.5));
+        assert_eq!(menu_wide, (26.0, 10.0, 1.8, 5.5));
 
         let tooltip_narrow = PopoverArrowPreset::TooltipNarrow.metrics();
-        assert_eq!(tooltip_narrow, (16.0, 7.0, 2.0, 3.0));
+        assert_eq!(tooltip_narrow, (16.0, 7.0, 1.2, 3.5));
 
         let appkit_std = PopoverArrowPreset::AppKitStandard.metrics();
-        assert_eq!(appkit_std, (27.5, 13.0, 5.0, 6.0));
+        assert_eq!(appkit_std, (27.5, 13.0, 2.0, 6.0));
 
         let subtle = PopoverArrowPreset::SubtleCompact.metrics();
-        assert_eq!(subtle, (12.0, 5.0, 1.5, 2.0));
+        assert_eq!(subtle, (12.0, 5.0, 1.0, 2.5));
 
         let tooltip_cfg = PopoverArrowConfig::from_preset(PopoverArrowEdge::Bottom, PopoverArrowPreset::TooltipNarrow);
         assert_eq!(tooltip_cfg.base_width, 16.0);
         assert_eq!(tooltip_cfg.height, 7.0);
-        assert_eq!(tooltip_cfg.tip_radius, 2.0);
+        assert_eq!(tooltip_cfg.tip_radius, 1.2);
     }
 }
