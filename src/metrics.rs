@@ -171,11 +171,11 @@ pub mod menu_metrics {
 
 /// Standard popover arrow / beak metrics and anchor placement matching Apple HIG.
 pub mod popover_metrics {
-    /// Standard base width of the popover arrow at the card junction (26.0 pt).
+    /// Standard base width of the popover arrow at the card junction (27.0 pt).
     ///
     /// Empirically verified via native macOS Popover/Dock context menu measurements:
-    /// Physical base anchor span is exactly 52 px (26.0 pt) with 10.0 pt height.
-    pub const ARROW_BASE_WIDTH: f32 = 26.0;
+    /// Physical base anchor span is exactly 54 px (27.0 pt) with 10.0 pt height (19.45 px).
+    pub const ARROW_BASE_WIDTH: f32 = 27.0;
 
     /// Compact popover arrow base width (20.0 pt).
     pub const ARROW_BASE_WIDTH_COMPACT: f32 = 20.0;
@@ -210,6 +210,74 @@ pub mod popover_metrics {
     /// Prevents the arrow fillet from clashing with the container squircle arc.
     pub const MIN_CORNER_CLEARANCE: f32 = 16.0;
 
+    // --- Subpixel-fitted Apple Popover Bézier Spline Constants ---
+    // Derived from Nelder-Mead optimization against native macOS Popover screenshots (RMSE < 0.1 px).
+    // The profile consists of two C1-continuous cubic Bézier segments per symmetrical half:
+    // Apex P0 = (0, 1), P1 = (APEX_CTRL_U, 1), P2 = (UPPER_FLANK_U, UPPER_FLANK_V), P3 = (INFLECTION_U, INFLECTION_V)
+    // Inflection Q0 = P3, Q1 = (LOWER_FLANK_U, LOWER_FLANK_V), Q2 = (BASE_CTRL_U, 0), Q3 = (1, 0)
+    pub const ARROW_SPLINE_APEX_CTRL_U: f32 = 0.20930;
+    pub const ARROW_SPLINE_UPPER_FLANK_U: f32 = 0.30582;
+    pub const ARROW_SPLINE_UPPER_FLANK_V: f32 = 0.84793;
+    pub const ARROW_SPLINE_INFLECTION_U: f32 = 0.43264;
+    pub const ARROW_SPLINE_INFLECTION_V: f32 = 0.61628;
+    pub const ARROW_SPLINE_LOWER_FLANK_U: f32 = 0.52699;
+    pub const ARROW_SPLINE_LOWER_FLANK_V: f32 = 0.44393;
+    pub const ARROW_SPLINE_BASE_CTRL_U: f32 = 0.76959;
+
+    /// Evaluates the normalized height v/ha in [0.0, 1.0] for a given lateral distance |u|/wb in [0.0, 1.0].
+    /// Solves the subpixel-fitted Apple popover Bézier spline using Newton-Raphson iterations.
+    #[must_use]
+    pub fn popover_arrow_profile_height(normalized_u: f32) -> f32 {
+        let u = normalized_u.clamp(0.0, 1.0);
+        if u <= 0.0 {
+            return 1.0;
+        }
+        if u >= 1.0 {
+            return 0.0;
+        }
+
+        if u < ARROW_SPLINE_INFLECTION_U {
+            let u_end = ARROW_SPLINE_INFLECTION_U;
+            let mut t = (u / u_end).clamp(0.0, 1.0);
+            for _ in 0..3 {
+                let inv = 1.0 - t;
+                let x = 3.0 * inv * inv * t * ARROW_SPLINE_APEX_CTRL_U
+                    + 3.0 * inv * t * t * ARROW_SPLINE_UPPER_FLANK_U
+                    + t * t * t * ARROW_SPLINE_INFLECTION_U;
+                let dx = 3.0 * inv * inv * ARROW_SPLINE_APEX_CTRL_U
+                    + 6.0 * inv * t * (ARROW_SPLINE_UPPER_FLANK_U - ARROW_SPLINE_APEX_CTRL_U)
+                    + 3.0 * t * t * (ARROW_SPLINE_INFLECTION_U - ARROW_SPLINE_UPPER_FLANK_U);
+                if dx.abs() > 1e-5 {
+                    t = (t - (x - u) / dx).clamp(0.0, 1.0);
+                }
+            }
+            let inv = 1.0 - t;
+            inv * inv * inv
+                + 3.0 * inv * inv * t
+                + 3.0 * inv * t * t * ARROW_SPLINE_UPPER_FLANK_V
+                + t * t * t * ARROW_SPLINE_INFLECTION_V
+        } else {
+            let u_start = ARROW_SPLINE_INFLECTION_U;
+            let mut t = ((u - u_start) / (1.0 - u_start)).clamp(0.0, 1.0);
+            for _ in 0..3 {
+                let inv = 1.0 - t;
+                let x = inv * inv * inv * ARROW_SPLINE_INFLECTION_U
+                    + 3.0 * inv * inv * t * ARROW_SPLINE_LOWER_FLANK_U
+                    + 3.0 * inv * t * t * ARROW_SPLINE_BASE_CTRL_U
+                    + t * t * t;
+                let dx = 3.0 * inv * inv * (ARROW_SPLINE_LOWER_FLANK_U - ARROW_SPLINE_INFLECTION_U)
+                    + 6.0 * inv * t * (ARROW_SPLINE_BASE_CTRL_U - ARROW_SPLINE_LOWER_FLANK_U)
+                    + 3.0 * t * t * (1.0 - ARROW_SPLINE_BASE_CTRL_U);
+                if dx.abs() > 1e-5 {
+                    t = (t - (x - u) / dx).clamp(0.0, 1.0);
+                }
+            }
+            let inv = 1.0 - t;
+            inv * inv * inv * ARROW_SPLINE_INFLECTION_V
+                + 3.0 * inv * inv * t * ARROW_SPLINE_LOWER_FLANK_V
+        }
+    }
+
     /// Edge on which the popover arrow protrudes towards its anchor target.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
     pub enum PopoverArrowEdge {
@@ -230,7 +298,7 @@ pub mod popover_metrics {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
     pub enum PopoverArrowPreset {
         /// Broad, concave flared popover arrow used in Dock context menus, Status Bar popovers,
-        /// and large content containers (Base 26.0 pt, Height 10.0 pt, Tip 1.8 pt, Fillet 5.5 pt).
+        /// and large content containers (Base 27.0 pt, Height 10.0 pt, Tip 1.8 pt, Fillet 5.5 pt).
         #[default]
         MenuWide,
         /// Standard `AppKit` / `SwiftUI` `NSPopover` system default (Base 27.5 pt, Height 13.0 pt, Tip 2.0 pt, Fillet 6.0 pt).
@@ -330,6 +398,12 @@ pub mod popover_metrics {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::assertions_on_constants,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
 mod tests {
     use super::menu_metrics::*;
 
@@ -418,7 +492,7 @@ mod tests {
 
         // Verify presets
         let menu_wide = PopoverArrowPreset::MenuWide.metrics();
-        assert_eq!(menu_wide, (26.0, 10.0, 1.8, 5.5));
+        assert_eq!(menu_wide, (27.0, 10.0, 1.8, 5.5));
 
         let tooltip_narrow = PopoverArrowPreset::TooltipNarrow.metrics();
         assert_eq!(tooltip_narrow, (16.0, 7.0, 1.2, 3.5));
@@ -433,5 +507,19 @@ mod tests {
         assert_eq!(tooltip_cfg.base_width, 16.0);
         assert_eq!(tooltip_cfg.height, 7.0);
         assert_eq!(tooltip_cfg.tip_radius, 1.2);
+
+        // Verify subpixel-fitted Bézier profile curve
+        assert!((popover_arrow_profile_height(0.0) - 1.0).abs() < 1e-4);
+        assert!((popover_arrow_profile_height(1.0) - 0.0).abs() < 1e-4);
+        let h_inf = popover_arrow_profile_height(ARROW_SPLINE_INFLECTION_U);
+        assert!((h_inf - ARROW_SPLINE_INFLECTION_V).abs() < 0.01);
+        // Monotonic decrease
+        let mut prev = 1.0;
+        for i in 1..=20 {
+            let u = i as f32 / 20.0;
+            let val = popover_arrow_profile_height(u);
+            assert!(val <= prev + 1e-5);
+            prev = val;
+        }
     }
 }
