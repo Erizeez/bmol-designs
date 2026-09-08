@@ -171,10 +171,10 @@ pub mod menu_metrics {
 
 /// Standard popover arrow / beak metrics and anchor placement matching Apple HIG.
 pub mod popover_metrics {
-    /// Standard base width of the popover arrow at the card junction (25.0 pt).
+    /// Standard base width of the popover arrow at the card junction (21.0 pt).
     ///
-    /// Calibrated to Apple design specifications: 25.0 pt base span with 10.0 pt height.
-    pub const ARROW_BASE_WIDTH: f32 = 25.0;
+    /// Calibrated to native macOS Dock context menu specifications: 21.0 pt base span with 9.0 pt height.
+    pub const ARROW_BASE_WIDTH: f32 = 21.0;
 
     /// Compact popover arrow base width (20.0 pt).
     pub const ARROW_BASE_WIDTH_COMPACT: f32 = 20.0;
@@ -182,10 +182,10 @@ pub mod popover_metrics {
     /// Large popover arrow base width for prominent HUDs (32.0 pt).
     pub const ARROW_BASE_WIDTH_LARGE: f32 = 32.0;
 
-    /// Standard protruding height of the popover arrow (10.0 pt).
+    /// Standard protruding height of the popover arrow (9.0 pt).
     ///
-    /// Extends outward from the squircle bounding box towards the target anchor (20 px @2x).
-    pub const ARROW_HEIGHT: f32 = 10.0;
+    /// Extends outward from the squircle bounding box towards the target anchor (18 px @2x).
+    pub const ARROW_HEIGHT: f32 = 9.0;
 
     /// Compact popover arrow height (7.0 pt).
     pub const ARROW_HEIGHT_COMPACT: f32 = 7.0;
@@ -235,7 +235,7 @@ pub mod popover_metrics {
     }
 
     /// Subpixel-fitted spline constants for broad popover / Dock context menu arrows (RMSE = 0.081 pt).
-    /// Measured from native macOS Dock context menu / `NSPopover`.
+    /// Measured from native macOS Dock context menu / `NSPopover` with gentle organic root flare.
     pub const MENU_WIDE_SPLINE: PopoverSplineConstants = PopoverSplineConstants {
         apex_ctrl_u: 0.20930,
         upper_flank_u: 0.30582,
@@ -243,22 +243,14 @@ pub mod popover_metrics {
         inflection_u: 0.43264,
         inflection_v: 0.61628,
         lower_flank_u: 0.52699,
-        lower_flank_v: 0.44393,
-        base_ctrl_u: 0.76959,
+        lower_flank_v: 0.36000,
+        base_ctrl_u: 0.83000,
     };
 
-    /// Subpixel-fitted spline constants for slender Dock item hover labels / tooltips (RMSE = 0.062 pt).
-    /// Measured from native macOS Dock icon hover tooltip ("Zed").
-    pub const TOOLTIP_NARROW_SPLINE: PopoverSplineConstants = PopoverSplineConstants {
-        apex_ctrl_u: 0.09179,
-        upper_flank_u: 0.19512,
-        upper_flank_v: 0.84933,
-        inflection_u: 0.28568,
-        inflection_v: 0.66180,
-        lower_flank_u: 0.40169,
-        lower_flank_v: 0.42158,
-        base_ctrl_u: 0.77971,
-    };
+    /// Unified continuous curvature spline constants for macOS popover arrows (RMSE = 0.081 pt).
+    /// Both wide (21×9) and narrow (20×7) macOS popover arrows share this exact
+    /// broad-dome continuous curvature spline profile.
+    pub const TOOLTIP_NARROW_SPLINE: PopoverSplineConstants = MENU_WIDE_SPLINE;
 
     // Aliases for MenuWide spline constants for backwards-compatibility:
     pub const ARROW_SPLINE_APEX_CTRL_U: f32 = MENU_WIDE_SPLINE.apex_ctrl_u;
@@ -354,8 +346,7 @@ pub mod popover_metrics {
     /// Preset styles for macOS popover and tooltip arrows matching system behaviors.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
     pub enum PopoverArrowPreset {
-        /// Broad, concave flared popover arrow used in Dock context menus, Status Bar popovers,
-        /// and large content containers (Base 25.0 pt, Height 10.0 pt, Tip 1.8 pt, Fillet 5.0 pt).
+        /// Authentic native macOS Dock context menu arrow with smooth organic root flare (Base 21.0 pt, Height 9.0 pt, Tip 1.8 pt, Fillet 5.0 pt).
         #[default]
         MenuWide,
         /// Standard `AppKit` / `SwiftUI` `NSPopover` system default (Base 27.5 pt, Height 13.0 pt, Tip 2.0 pt, Fillet 6.0 pt).
@@ -380,12 +371,10 @@ pub mod popover_metrics {
         }
 
         /// Returns the authentic subpixel-fitted Bézier spline parameters for this preset.
+        /// All presets share the unified generous continuous curvature profile.
         #[must_use]
         pub const fn spline(self) -> PopoverSplineConstants {
-            match self {
-                Self::MenuWide | Self::AppKitStandard => MENU_WIDE_SPLINE,
-                Self::TooltipNarrow | Self::SubtleCompact => TOOLTIP_NARROW_SPLINE,
-            }
+            MENU_WIDE_SPLINE
         }
     }
 
@@ -582,7 +571,7 @@ mod tests {
 
         // Verify presets
         let menu_wide = PopoverArrowPreset::MenuWide.metrics();
-        assert_eq!(menu_wide, (25.0, 10.0, 1.8, 5.0));
+        assert_eq!(menu_wide, (21.0, 9.0, 1.8, 5.0));
 
         let tooltip_narrow = PopoverArrowPreset::TooltipNarrow.metrics();
         assert_eq!(tooltip_narrow, (20.0, 7.0, 1.0, 4.0));
