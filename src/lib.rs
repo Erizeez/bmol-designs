@@ -5,7 +5,7 @@ pub mod metrics;
 pub mod theme;
 
 pub use font::size as font_size;
-pub use metrics::{DEFAULT_WINDOW_CORNER_RADIUS, scrollbar, traffic_lights};
+pub use metrics::{DEFAULT_WINDOW_CORNER_RADIUS, scrollbar, traffic_lights, window_metrics};
 pub use theme::{
     GlassChrome, GlassRole, UiColorScheme, UiCornerStyle, UiPalette, UiTheme,
 };
