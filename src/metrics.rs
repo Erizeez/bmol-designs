@@ -171,43 +171,43 @@ pub mod menu_metrics {
 
 /// Standard popover arrow / beak metrics and anchor placement matching Apple HIG.
 pub mod popover_metrics {
-    /// Standard base width of the popover arrow at the card junction (20.0 pt).
+    /// Standard base width of the popover arrow at the card junction (28.0 pt).
     ///
     /// Empirically verified via native `AppKit` `NSPopoverFrame`:
-    /// System popover arrow has nominal anchor width 20.0~27.5 pt.
-    pub const ARROW_BASE_WIDTH: f32 = 20.0;
+    /// System popover arrow has nominal anchor width 28.0~32.0 pt with gentle rounded dome.
+    pub const ARROW_BASE_WIDTH: f32 = 28.0;
 
-    /// Compact popover arrow base width (16.0 pt).
-    pub const ARROW_BASE_WIDTH_COMPACT: f32 = 16.0;
+    /// Compact popover arrow base width (22.0 pt).
+    pub const ARROW_BASE_WIDTH_COMPACT: f32 = 22.0;
 
-    /// Large popover arrow base width for prominent HUDs (26.0 pt).
-    pub const ARROW_BASE_WIDTH_LARGE: f32 = 26.0;
+    /// Large popover arrow base width for prominent HUDs (34.0 pt).
+    pub const ARROW_BASE_WIDTH_LARGE: f32 = 34.0;
 
-    /// Standard protruding height of the popover arrow (10.0 pt).
+    /// Standard protruding height of the popover arrow (10.5 pt).
     ///
     /// Extends outward from the squircle bounding box towards the target anchor.
-    pub const ARROW_HEIGHT: f32 = 10.0;
+    pub const ARROW_HEIGHT: f32 = 10.5;
 
-    /// Compact popover arrow height (8.0 pt).
-    pub const ARROW_HEIGHT_COMPACT: f32 = 8.0;
+    /// Compact popover arrow height (8.5 pt).
+    pub const ARROW_HEIGHT_COMPACT: f32 = 8.5;
 
-    /// Large popover arrow height (12.0 pt).
-    pub const ARROW_HEIGHT_LARGE: f32 = 12.0;
+    /// Large popover arrow height (13.0 pt).
+    pub const ARROW_HEIGHT_LARGE: f32 = 13.0;
 
-    /// Tip corner radius of the arrow (3.0 pt).
+    /// Tip corner radius of the arrow (5.0 pt).
     ///
-    /// Ensures the apex is gently rounded matching Apple continuous curvature.
-    pub const ARROW_TIP_RADIUS: f32 = 3.0;
+    /// Ensures the apex is a broad, gentle dome matching Apple continuous curvature.
+    pub const ARROW_TIP_RADIUS: f32 = 5.0;
 
-    /// Smooth base fillet radius connecting the arrow sloped sides into the card edge (4.0 pt).
+    /// Smooth base fillet radius connecting the arrow sloped sides into the card edge (5.5 pt).
     ///
     /// Provides continuous tangent transitions (G1/G2) to avoid sharp reentrant corners.
-    pub const ARROW_BASE_FILLET: f32 = 4.0;
+    pub const ARROW_BASE_FILLET: f32 = 5.5;
 
-    /// Minimum clearance from arrow base to the nearest corner of the card container (16.0 pt).
+    /// Minimum clearance from arrow base to the nearest corner of the card container (18.0 pt).
     ///
     /// Prevents the arrow fillet from clashing with the container squircle arc.
-    pub const MIN_CORNER_CLEARANCE: f32 = 16.0;
+    pub const MIN_CORNER_CLEARANCE: f32 = 18.0;
 
     /// Edge on which the popover arrow protrudes towards its anchor target.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
