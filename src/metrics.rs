@@ -232,7 +232,7 @@ pub mod popover_metrics {
         /// and large content containers (Base 26.0 pt, Height 10.0 pt, Tip 5.0 pt).
         #[default]
         MenuWide,
-        /// Standard AppKit / SwiftUI `NSPopover` system default (Base 27.5 pt, Height 13.0 pt, Tip 5.0 pt).
+        /// Standard `AppKit` / `SwiftUI` `NSPopover` system default (Base 27.5 pt, Height 13.0 pt, Tip 5.0 pt).
         AppKitStandard,
         /// Narrow, slender tooltip arrow used in Dock icon hover labels, Cartouche popovers,
         /// and compact tooltips (Base 16.0 pt, Height 7.0 pt, Tip 2.0 pt, Fillet 3.0 pt).
