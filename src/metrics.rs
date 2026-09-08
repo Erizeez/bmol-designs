@@ -209,6 +209,12 @@ pub mod popover_metrics {
     /// Prevents the arrow fillet from clashing with the container squircle arc.
     pub const MIN_CORNER_CLEARANCE: f32 = 16.0;
 
+    /// Default center distance of the popover arrow from the left edge of macOS Dock menus (27.0 pt).
+    ///
+    /// In native macOS, context menus triggered by clicking or long-pressing Dock icons
+    /// anchor their bottom protruding arrow apex at exactly 27.0 pt from the card's left boundary.
+    pub const DOCK_MENU_ARROW_CENTER_OFFSET: f32 = 27.0;
+
     // --- Subpixel-fitted Apple Popover Bézier Spline Constants ---
     // Derived from Nelder-Mead optimization against native macOS screenshots (RMSE < 0.1 px).
     // The profile consists of two C1-continuous cubic Bézier segments per symmetrical half:
@@ -464,6 +470,17 @@ pub mod popover_metrics {
         pub const fn is_visible(&self) -> bool {
             !matches!(self.edge, PopoverArrowEdge::None) && self.height > 0.0 && self.base_width > 0.0
         }
+
+        /// Computes the normalized arrow offset [0.0, 1.0] for a standard Dock context menu
+        /// of the given card width based on the default 27.0 pt anchor center distance.
+        #[must_use]
+        pub const fn dock_menu_offset(card_width: f32) -> f32 {
+            if card_width > 0.0 {
+                DOCK_MENU_ARROW_CENTER_OFFSET / card_width
+            } else {
+                0.5
+            }
+        }
     }
 }
 
@@ -544,6 +561,9 @@ mod tests {
         assert!(ARROW_TIP_RADIUS >= 1.0);
         assert!(ARROW_BASE_FILLET >= 3.0);
         assert!(MIN_CORNER_CLEARANCE >= CONTAINER_CORNER_RADIUS);
+        assert_eq!(DOCK_MENU_ARROW_CENTER_OFFSET, 27.0);
+        let dock_offset = PopoverArrowConfig::dock_menu_offset(154.0);
+        assert!((dock_offset - 27.0 / 154.0).abs() < 1e-6);
 
         let default_cfg = PopoverArrowConfig::default();
         assert!(!default_cfg.is_visible());
