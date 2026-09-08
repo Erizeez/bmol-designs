@@ -211,23 +211,68 @@ pub mod popover_metrics {
     pub const MIN_CORNER_CLEARANCE: f32 = 16.0;
 
     // --- Subpixel-fitted Apple Popover Bézier Spline Constants ---
-    // Derived from Nelder-Mead optimization against native macOS Popover screenshots (RMSE < 0.1 px).
+    // Derived from Nelder-Mead optimization against native macOS screenshots (RMSE < 0.1 px).
     // The profile consists of two C1-continuous cubic Bézier segments per symmetrical half:
     // Apex P0 = (0, 1), P1 = (APEX_CTRL_U, 1), P2 = (UPPER_FLANK_U, UPPER_FLANK_V), P3 = (INFLECTION_U, INFLECTION_V)
     // Inflection Q0 = P3, Q1 = (LOWER_FLANK_U, LOWER_FLANK_V), Q2 = (BASE_CTRL_U, 0), Q3 = (1, 0)
-    pub const ARROW_SPLINE_APEX_CTRL_U: f32 = 0.20930;
-    pub const ARROW_SPLINE_UPPER_FLANK_U: f32 = 0.30582;
-    pub const ARROW_SPLINE_UPPER_FLANK_V: f32 = 0.84793;
-    pub const ARROW_SPLINE_INFLECTION_U: f32 = 0.43264;
-    pub const ARROW_SPLINE_INFLECTION_V: f32 = 0.61628;
-    pub const ARROW_SPLINE_LOWER_FLANK_U: f32 = 0.52699;
-    pub const ARROW_SPLINE_LOWER_FLANK_V: f32 = 0.44393;
-    pub const ARROW_SPLINE_BASE_CTRL_U: f32 = 0.76959;
 
-    /// Evaluates the normalized height v/ha in [0.0, 1.0] for a given lateral distance |u|/wb in [0.0, 1.0].
+    /// Symmetrical half Bézier spline parameters (normalized to u in [0, 1], v in [0, 1]).
+    #[derive(Debug, Clone, Copy, PartialEq)]
+    pub struct PopoverSplineConstants {
+        pub apex_ctrl_u: f32,
+        pub upper_flank_u: f32,
+        pub upper_flank_v: f32,
+        pub inflection_u: f32,
+        pub inflection_v: f32,
+        pub lower_flank_u: f32,
+        pub lower_flank_v: f32,
+        pub base_ctrl_u: f32,
+    }
+
+    /// Subpixel-fitted spline constants for broad popover / Dock context menu arrows (RMSE = 0.081 pt).
+    /// Measured from native macOS Dock context menu / `NSPopover`.
+    pub const MENU_WIDE_SPLINE: PopoverSplineConstants = PopoverSplineConstants {
+        apex_ctrl_u: 0.20930,
+        upper_flank_u: 0.30582,
+        upper_flank_v: 0.84793,
+        inflection_u: 0.43264,
+        inflection_v: 0.61628,
+        lower_flank_u: 0.52699,
+        lower_flank_v: 0.44393,
+        base_ctrl_u: 0.76959,
+    };
+
+    /// Subpixel-fitted spline constants for slender Dock item hover labels / tooltips (RMSE = 0.062 pt).
+    /// Measured from native macOS Dock icon hover tooltip ("Zed").
+    pub const TOOLTIP_NARROW_SPLINE: PopoverSplineConstants = PopoverSplineConstants {
+        apex_ctrl_u: 0.09179,
+        upper_flank_u: 0.19512,
+        upper_flank_v: 0.84933,
+        inflection_u: 0.28568,
+        inflection_v: 0.66180,
+        lower_flank_u: 0.40169,
+        lower_flank_v: 0.42158,
+        base_ctrl_u: 0.77971,
+    };
+
+    // Aliases for MenuWide spline constants for backwards-compatibility:
+    pub const ARROW_SPLINE_APEX_CTRL_U: f32 = MENU_WIDE_SPLINE.apex_ctrl_u;
+    pub const ARROW_SPLINE_UPPER_FLANK_U: f32 = MENU_WIDE_SPLINE.upper_flank_u;
+    pub const ARROW_SPLINE_UPPER_FLANK_V: f32 = MENU_WIDE_SPLINE.upper_flank_v;
+    pub const ARROW_SPLINE_INFLECTION_U: f32 = MENU_WIDE_SPLINE.inflection_u;
+    pub const ARROW_SPLINE_INFLECTION_V: f32 = MENU_WIDE_SPLINE.inflection_v;
+    pub const ARROW_SPLINE_LOWER_FLANK_U: f32 = MENU_WIDE_SPLINE.lower_flank_u;
+    pub const ARROW_SPLINE_LOWER_FLANK_V: f32 = MENU_WIDE_SPLINE.lower_flank_v;
+    pub const ARROW_SPLINE_BASE_CTRL_U: f32 = MENU_WIDE_SPLINE.base_ctrl_u;
+
+    /// Evaluates the normalized height v/ha in [0.0, 1.0] for a given lateral distance |u|/wb in [0.0, 1.0]
+    /// using the specified spline constants.
     /// Solves the subpixel-fitted Apple popover Bézier spline using Newton-Raphson iterations.
     #[must_use]
-    pub fn popover_arrow_profile_height(normalized_u: f32) -> f32 {
+    pub fn popover_arrow_profile_height_with_spline(
+        spline: &PopoverSplineConstants,
+        normalized_u: f32,
+    ) -> f32 {
         let u = normalized_u.clamp(0.0, 1.0);
         if u <= 0.0 {
             return 1.0;
@@ -236,17 +281,17 @@ pub mod popover_metrics {
             return 0.0;
         }
 
-        if u < ARROW_SPLINE_INFLECTION_U {
-            let u_end = ARROW_SPLINE_INFLECTION_U;
+        if u < spline.inflection_u {
+            let u_end = spline.inflection_u;
             let mut t = (u / u_end).clamp(0.0, 1.0);
             for _ in 0..3 {
                 let inv = 1.0 - t;
-                let x = 3.0 * inv * inv * t * ARROW_SPLINE_APEX_CTRL_U
-                    + 3.0 * inv * t * t * ARROW_SPLINE_UPPER_FLANK_U
-                    + t * t * t * ARROW_SPLINE_INFLECTION_U;
-                let dx = 3.0 * inv * inv * ARROW_SPLINE_APEX_CTRL_U
-                    + 6.0 * inv * t * (ARROW_SPLINE_UPPER_FLANK_U - ARROW_SPLINE_APEX_CTRL_U)
-                    + 3.0 * t * t * (ARROW_SPLINE_INFLECTION_U - ARROW_SPLINE_UPPER_FLANK_U);
+                let x = 3.0 * inv * inv * t * spline.apex_ctrl_u
+                    + 3.0 * inv * t * t * spline.upper_flank_u
+                    + t * t * t * spline.inflection_u;
+                let dx = 3.0 * inv * inv * spline.apex_ctrl_u
+                    + 6.0 * inv * t * (spline.upper_flank_u - spline.apex_ctrl_u)
+                    + 3.0 * t * t * (spline.inflection_u - spline.upper_flank_u);
                 if dx.abs() > 1e-5 {
                     t = (t - (x - u) / dx).clamp(0.0, 1.0);
                 }
@@ -254,28 +299,35 @@ pub mod popover_metrics {
             let inv = 1.0 - t;
             inv * inv * inv
                 + 3.0 * inv * inv * t
-                + 3.0 * inv * t * t * ARROW_SPLINE_UPPER_FLANK_V
-                + t * t * t * ARROW_SPLINE_INFLECTION_V
+                + 3.0 * inv * t * t * spline.upper_flank_v
+                + t * t * t * spline.inflection_v
         } else {
-            let u_start = ARROW_SPLINE_INFLECTION_U;
+            let u_start = spline.inflection_u;
             let mut t = ((u - u_start) / (1.0 - u_start)).clamp(0.0, 1.0);
             for _ in 0..3 {
                 let inv = 1.0 - t;
-                let x = inv * inv * inv * ARROW_SPLINE_INFLECTION_U
-                    + 3.0 * inv * inv * t * ARROW_SPLINE_LOWER_FLANK_U
-                    + 3.0 * inv * t * t * ARROW_SPLINE_BASE_CTRL_U
+                let x = inv * inv * inv * spline.inflection_u
+                    + 3.0 * inv * inv * t * spline.lower_flank_u
+                    + 3.0 * inv * t * t * spline.base_ctrl_u
                     + t * t * t;
-                let dx = 3.0 * inv * inv * (ARROW_SPLINE_LOWER_FLANK_U - ARROW_SPLINE_INFLECTION_U)
-                    + 6.0 * inv * t * (ARROW_SPLINE_BASE_CTRL_U - ARROW_SPLINE_LOWER_FLANK_U)
-                    + 3.0 * t * t * (1.0 - ARROW_SPLINE_BASE_CTRL_U);
+                let dx = 3.0 * inv * inv * (spline.lower_flank_u - spline.inflection_u)
+                    + 6.0 * inv * t * (spline.base_ctrl_u - spline.lower_flank_u)
+                    + 3.0 * t * t * (1.0 - spline.base_ctrl_u);
                 if dx.abs() > 1e-5 {
                     t = (t - (x - u) / dx).clamp(0.0, 1.0);
                 }
             }
             let inv = 1.0 - t;
-            inv * inv * inv * ARROW_SPLINE_INFLECTION_V
-                + 3.0 * inv * inv * t * ARROW_SPLINE_LOWER_FLANK_V
+            inv * inv * inv * spline.inflection_v
+                + 3.0 * inv * inv * t * spline.lower_flank_v
         }
+    }
+
+    /// Evaluates the normalized height v/ha in [0.0, 1.0] for a given lateral distance |u|/wb in [0.0, 1.0]
+    /// using the default `MenuWide` spline.
+    #[must_use]
+    pub fn popover_arrow_profile_height(normalized_u: f32) -> f32 {
+        popover_arrow_profile_height_with_spline(&MENU_WIDE_SPLINE, normalized_u)
     }
 
     /// Edge on which the popover arrow protrudes towards its anchor target.
@@ -304,7 +356,7 @@ pub mod popover_metrics {
         /// Standard `AppKit` / `SwiftUI` `NSPopover` system default (Base 27.5 pt, Height 13.0 pt, Tip 2.0 pt, Fillet 6.0 pt).
         AppKitStandard,
         /// Narrow, slender tooltip arrow used in Dock icon hover labels, Cartouche popovers,
-        /// and compact tooltips (Base 16.0 pt, Height 7.0 pt, Tip 1.2 pt, Fillet 3.5 pt).
+        /// and compact tooltips (Base 21.0 pt, Height 6.2 pt, Tip 1.0 pt, Fillet 4.5 pt).
         TooltipNarrow,
         /// Minimal subtle pointer for ultra-compact controls (Base 12.0 pt, Height 5.0 pt, Tip 1.0 pt, Fillet 2.5 pt).
         SubtleCompact,
@@ -317,8 +369,17 @@ pub mod popover_metrics {
             match self {
                 Self::MenuWide => (ARROW_BASE_WIDTH, ARROW_HEIGHT, ARROW_TIP_RADIUS, ARROW_BASE_FILLET),
                 Self::AppKitStandard => (27.5, 13.0, 2.0, 6.0),
-                Self::TooltipNarrow => (16.0, 7.0, 1.2, 3.5),
+                Self::TooltipNarrow => (21.0, 6.2, 1.0, 4.5),
                 Self::SubtleCompact => (12.0, 5.0, 1.0, 2.5),
+            }
+        }
+
+        /// Returns the authentic subpixel-fitted Bézier spline parameters for this preset.
+        #[must_use]
+        pub const fn spline(self) -> PopoverSplineConstants {
+            match self {
+                Self::MenuWide | Self::AppKitStandard => MENU_WIDE_SPLINE,
+                Self::TooltipNarrow | Self::SubtleCompact => TOOLTIP_NARROW_SPLINE,
             }
         }
     }
@@ -333,6 +394,8 @@ pub mod popover_metrics {
         pub base_fillet: f32,
         /// Normalized position along the edge (0.0 = start, 0.5 = center, 1.0 = end).
         pub offset: f32,
+        /// Spline curvature constants determining the flank and apex profile.
+        pub spline: PopoverSplineConstants,
     }
 
     impl Default for PopoverArrowConfig {
@@ -357,6 +420,7 @@ pub mod popover_metrics {
                 tip_radius,
                 base_fillet,
                 offset: 0.5,
+                spline: preset.spline(),
             }
         }
 
@@ -367,6 +431,13 @@ pub mod popover_metrics {
             self.height = height;
             self.tip_radius = tip_radius;
             self.base_fillet = base_fillet;
+            self.spline = preset.spline();
+            self
+        }
+
+        #[must_use]
+        pub const fn with_spline(mut self, spline: PopoverSplineConstants) -> Self {
+            self.spline = spline;
             self
         }
 
@@ -495,7 +566,7 @@ mod tests {
         assert_eq!(menu_wide, (27.0, 10.0, 1.8, 5.5));
 
         let tooltip_narrow = PopoverArrowPreset::TooltipNarrow.metrics();
-        assert_eq!(tooltip_narrow, (16.0, 7.0, 1.2, 3.5));
+        assert_eq!(tooltip_narrow, (21.0, 6.2, 1.0, 4.5));
 
         let appkit_std = PopoverArrowPreset::AppKitStandard.metrics();
         assert_eq!(appkit_std, (27.5, 13.0, 2.0, 6.0));
@@ -504,15 +575,23 @@ mod tests {
         assert_eq!(subtle, (12.0, 5.0, 1.0, 2.5));
 
         let tooltip_cfg = PopoverArrowConfig::from_preset(PopoverArrowEdge::Bottom, PopoverArrowPreset::TooltipNarrow);
-        assert_eq!(tooltip_cfg.base_width, 16.0);
-        assert_eq!(tooltip_cfg.height, 7.0);
-        assert_eq!(tooltip_cfg.tip_radius, 1.2);
+        assert_eq!(tooltip_cfg.base_width, 21.0);
+        assert_eq!(tooltip_cfg.height, 6.2);
+        assert_eq!(tooltip_cfg.tip_radius, 1.0);
+        assert_eq!(tooltip_cfg.spline, TOOLTIP_NARROW_SPLINE);
 
-        // Verify subpixel-fitted Bézier profile curve
+        // Verify subpixel-fitted Bézier profile curve (MenuWide)
         assert!((popover_arrow_profile_height(0.0) - 1.0).abs() < 1e-4);
         assert!((popover_arrow_profile_height(1.0) - 0.0).abs() < 1e-4);
         let h_inf = popover_arrow_profile_height(ARROW_SPLINE_INFLECTION_U);
         assert!((h_inf - ARROW_SPLINE_INFLECTION_V).abs() < 0.01);
+
+        // Verify subpixel-fitted Bézier profile curve (TooltipNarrow)
+        assert!((popover_arrow_profile_height_with_spline(&TOOLTIP_NARROW_SPLINE, 0.0) - 1.0).abs() < 1e-4);
+        assert!((popover_arrow_profile_height_with_spline(&TOOLTIP_NARROW_SPLINE, 1.0) - 0.0).abs() < 1e-4);
+        let h_inf_tt = popover_arrow_profile_height_with_spline(&TOOLTIP_NARROW_SPLINE, TOOLTIP_NARROW_SPLINE.inflection_u);
+        assert!((h_inf_tt - TOOLTIP_NARROW_SPLINE.inflection_v).abs() < 0.01);
+
         // Monotonic decrease
         let mut prev = 1.0;
         for i in 1..=20 {
