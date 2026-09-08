@@ -225,6 +225,35 @@ pub mod popover_metrics {
         None,
     }
 
+    /// Preset styles for macOS popover and tooltip arrows matching system behaviors.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+    pub enum PopoverArrowPreset {
+        /// Broad, smooth dome popover arrow used in Dock context menus, Status Bar popovers,
+        /// and large content containers (Base 26.0 pt, Height 10.0 pt, Tip 5.0 pt).
+        #[default]
+        MenuWide,
+        /// Standard AppKit / SwiftUI `NSPopover` system default (Base 27.5 pt, Height 13.0 pt, Tip 5.0 pt).
+        AppKitStandard,
+        /// Narrow, slender tooltip arrow used in Dock icon hover labels, Cartouche popovers,
+        /// and compact tooltips (Base 16.0 pt, Height 7.0 pt, Tip 2.0 pt, Fillet 3.0 pt).
+        TooltipNarrow,
+        /// Minimal subtle pointer for ultra-compact controls (Base 12.0 pt, Height 5.0 pt, Tip 1.5 pt).
+        SubtleCompact,
+    }
+
+    impl PopoverArrowPreset {
+        /// Returns `(base_width, height, tip_radius, base_fillet)` for this preset.
+        #[must_use]
+        pub const fn metrics(self) -> (f32, f32, f32, f32) {
+            match self {
+                Self::MenuWide => (ARROW_BASE_WIDTH, ARROW_HEIGHT, ARROW_TIP_RADIUS, ARROW_BASE_FILLET),
+                Self::AppKitStandard => (27.5, 13.0, 5.0, 6.0),
+                Self::TooltipNarrow => (16.0, 7.0, 2.0, 3.0),
+                Self::SubtleCompact => (12.0, 5.0, 1.5, 2.0),
+            }
+        }
+    }
+
     /// Configuration parameters for a popover arrow.
     #[derive(Debug, Clone, Copy, PartialEq)]
     pub struct PopoverArrowConfig {
@@ -239,28 +268,37 @@ pub mod popover_metrics {
 
     impl Default for PopoverArrowConfig {
         fn default() -> Self {
-            Self {
-                edge: PopoverArrowEdge::None,
-                base_width: ARROW_BASE_WIDTH,
-                height: ARROW_HEIGHT,
-                tip_radius: ARROW_TIP_RADIUS,
-                base_fillet: ARROW_BASE_FILLET,
-                offset: 0.5,
-            }
+            Self::from_preset(PopoverArrowEdge::None, PopoverArrowPreset::MenuWide)
         }
     }
 
     impl PopoverArrowConfig {
         #[must_use]
         pub const fn new(edge: PopoverArrowEdge) -> Self {
+            Self::from_preset(edge, PopoverArrowPreset::MenuWide)
+        }
+
+        #[must_use]
+        pub const fn from_preset(edge: PopoverArrowEdge, preset: PopoverArrowPreset) -> Self {
+            let (base_width, height, tip_radius, base_fillet) = preset.metrics();
             Self {
                 edge,
-                base_width: ARROW_BASE_WIDTH,
-                height: ARROW_HEIGHT,
-                tip_radius: ARROW_TIP_RADIUS,
-                base_fillet: ARROW_BASE_FILLET,
+                base_width,
+                height,
+                tip_radius,
+                base_fillet,
                 offset: 0.5,
             }
+        }
+
+        #[must_use]
+        pub const fn with_preset(mut self, preset: PopoverArrowPreset) -> Self {
+            let (base_width, height, tip_radius, base_fillet) = preset.metrics();
+            self.base_width = base_width;
+            self.height = height;
+            self.tip_radius = tip_radius;
+            self.base_fillet = base_fillet;
+            self
         }
 
         #[must_use]
@@ -273,6 +311,13 @@ pub mod popover_metrics {
         pub const fn with_size(mut self, base_width: f32, height: f32) -> Self {
             self.base_width = base_width;
             self.height = height;
+            self
+        }
+
+        #[must_use]
+        pub const fn with_curvature(mut self, tip_radius: f32, base_fillet: f32) -> Self {
+            self.tip_radius = tip_radius;
+            self.base_fillet = base_fillet;
             self
         }
 
@@ -369,5 +414,23 @@ mod tests {
         assert_eq!(custom_cfg.offset, 0.75);
         assert_eq!(custom_cfg.base_width, 24.0);
         assert_eq!(custom_cfg.height, 12.0);
+
+        // Verify presets
+        let menu_wide = PopoverArrowPreset::MenuWide.metrics();
+        assert_eq!(menu_wide, (26.0, 10.0, 5.0, 5.5));
+
+        let tooltip_narrow = PopoverArrowPreset::TooltipNarrow.metrics();
+        assert_eq!(tooltip_narrow, (16.0, 7.0, 2.0, 3.0));
+
+        let appkit_std = PopoverArrowPreset::AppKitStandard.metrics();
+        assert_eq!(appkit_std, (27.5, 13.0, 5.0, 6.0));
+
+        let subtle = PopoverArrowPreset::SubtleCompact.metrics();
+        assert_eq!(subtle, (12.0, 5.0, 1.5, 2.0));
+
+        let tooltip_cfg = PopoverArrowConfig::from_preset(PopoverArrowEdge::Bottom, PopoverArrowPreset::TooltipNarrow);
+        assert_eq!(tooltip_cfg.base_width, 16.0);
+        assert_eq!(tooltip_cfg.height, 7.0);
+        assert_eq!(tooltip_cfg.tip_radius, 2.0);
     }
 }
