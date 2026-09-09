@@ -11,18 +11,20 @@ pub const DEFAULT_WINDOW_CORNER_RADIUS: f64 = window_geometry::CORNER_RADIUS as 
 pub mod traffic_lights {
     /// Authentic macOS traffic light button diameter (strictly 14.0 pt / 28 px on 2x Retina).
     pub const DIAMETER: f32 = 14.0;
-    /// Gap between adjacent traffic light buttons (`H / 2`, 16.0 pt for `H = 32`).
-    pub const SPACING: f32 = 16.0;
-    /// Distance from the left window edge to the leftmost edge of the red light (9.0 pt).
-    pub const LEADING_MARGIN: f32 = 9.0;
-    /// Total width across the three lights (14 + 16 + 14 + 16 + 14 = 74.0 pt).
-    pub const TOTAL_WIDTH: f32 = 74.0;
+    /// Edge-to-edge gap between adjacent traffic light buttons, derived from
+    /// the separate titlebar height: `H/2 − D/2` (9.0 pt for `H = 32, D = 14`).
+    pub const SPACING: f32 = super::window_geometry::TITLEBAR_HEIGHT / 2.0 - DIAMETER / 2.0;
+    /// Distance from the left window edge to the leftmost edge of the red
+    /// light, derived from the separate titlebar height: `H/2 − D/2`.
+    pub const LEADING_MARGIN: f32 = SPACING;
+    /// Total width across the three lights: `D × 3 + SPACING × 2`.
+    pub const TOTAL_WIDTH: f32 = DIAMETER * 3.0 + SPACING * 2.0;
     /// Authentic height matches the button diameter (14.0 pt).
     pub const HEIGHT: f32 = DIAMETER;
     /// Clearance distance from the right edge of traffic lights to the first letter of title (strictly 15.0 px).
     pub const TITLE_CLEARANCE: f32 = 15.0;
-    /// Recommended horizontal clearance width including padding (9 + 74 + 8 = 91.0 pt).
-    pub const EXCLUSION_WIDTH: f32 = 91.0;
+    /// Recommended horizontal clearance width: `LEADING_MARGIN + TOTAL_WIDTH + 8`.
+    pub const EXCLUSION_WIDTH: f32 = LEADING_MARGIN + TOTAL_WIDTH + 8.0;
 
     /// Standard hover expansion slop around traffic light buttons for hit testing and gesture tracking.
     #[must_use]
@@ -59,10 +61,10 @@ pub mod window_geometry {
         (h / 2.0, h / 2.0)
     }
 
-    /// Gap between adjacent traffic-light circles `H / 2`.
+    /// Edge-to-edge gap between adjacent traffic-light circles: `H/2 − D/2`.
     #[must_use]
     pub const fn traffic_light_spacing(h: f32) -> f32 {
-        h / 2.0
+        h / 2.0 - traffic_lights::DIAMETER / 2.0
     }
 
     /// Centre-to-centre pitch between traffic lights (diameter + spacing).
@@ -646,10 +648,10 @@ mod tests {
         // The red traffic light is concentric with the corner: centre (H/2, H/2).
         assert_eq!(window_geometry::traffic_light_center(32.0), (16.0, 16.0));
 
-        // Spacing is the separate H / 2 = 16 (fixed across modes).
-        assert_eq!(window_geometry::traffic_light_spacing(32.0), 16.0);
-        assert_eq!(window_geometry::traffic_light_pitch(32.0), 30.0); // 14 + 16
-        assert_eq!(window_geometry::traffic_lights_total_width(32.0), 74.0); // 14*3 + 16*2
+        // Spacing is H/2 - D/2 = 9 (edge-to-edge gap, fixed across modes).
+        assert_eq!(window_geometry::traffic_light_spacing(32.0), 9.0);
+        assert_eq!(window_geometry::traffic_light_pitch(32.0), 23.0); // 14 + 9
+        assert_eq!(window_geometry::traffic_lights_total_width(32.0), 60.0); // 14*3 + 9*2
     }
 
     #[test]
