@@ -1,27 +1,80 @@
 //! Standard metrics, layout constants, and physical measurements.
 
 /// Default window corner radius for macOS modern borderless windows.
-pub const DEFAULT_WINDOW_CORNER_RADIUS: f64 = 14.0;
+///
+/// Always derived from the *separate* titlebar height (see
+/// [`window_geometry`]), even for unified/fused chrome, so the outer
+/// curvature is constant across layout modes.
+pub const DEFAULT_WINDOW_CORNER_RADIUS: f64 = window_geometry::CORNER_RADIUS as f64;
 
 /// Apple traffic lights metrics.
 pub mod traffic_lights {
     /// Authentic macOS traffic light button diameter (strictly 14.0 pt / 28 px on 2x Retina).
     pub const DIAMETER: f32 = 14.0;
-    /// Authentic macOS spacing between traffic light buttons (strictly 9.0 px).
-    pub const SPACING: f32 = 9.0;
-    /// Total width across the three lights (14 + 9 + 14 + 9 + 14 = 60.0 px).
-    pub const TOTAL_WIDTH: f32 = 60.0;
+    /// Gap between adjacent traffic light buttons (`H / 2`, 16.0 pt for `H = 32`).
+    pub const SPACING: f32 = 16.0;
+    /// Distance from the left window edge to the leftmost edge of the red light (9.0 pt).
+    pub const LEADING_MARGIN: f32 = 9.0;
+    /// Total width across the three lights (14 + 16 + 14 + 16 + 14 = 74.0 pt).
+    pub const TOTAL_WIDTH: f32 = 74.0;
     /// Authentic height matches the button diameter (14.0 pt).
     pub const HEIGHT: f32 = DIAMETER;
     /// Clearance distance from the right edge of traffic lights to the first letter of title (strictly 15.0 px).
     pub const TITLE_CLEARANCE: f32 = 15.0;
-    /// Recommended horizontal clearance width including padding (78.0 px).
-    pub const EXCLUSION_WIDTH: f32 = 78.0;
+    /// Recommended horizontal clearance width including padding (9 + 74 + 8 = 91.0 pt).
+    pub const EXCLUSION_WIDTH: f32 = 91.0;
 
     /// Standard hover expansion slop around traffic light buttons for hit testing and gesture tracking.
     #[must_use]
     pub const fn control_hover_slop(size: f32) -> f32 {
         if size > 32.0 { 16.0 } else { 6.0 }
+    }
+}
+
+/// Window geometry derived from the standalone titlebar height `H`.
+///
+/// `H` is the measured separate-mode titlebar height. Curvature, traffic-light
+/// placement, and spacing are all derived from it, so the whole window geometry
+/// has a single source of truth and the red light stays concentric with the
+/// window corner.
+pub mod window_geometry {
+    use super::traffic_lights;
+
+    /// Measured standalone titlebar height (32.0 pt).
+    pub const TITLEBAR_HEIGHT: f32 = 32.0;
+
+    /// Window corner radius, always derived from the *separate* titlebar height
+    /// so unified/fused chrome keeps the same outer curvature.
+    pub const CORNER_RADIUS: f32 = corner_radius(TITLEBAR_HEIGHT);
+
+    /// Window corner radius `R = H / 2`, concentric with the red traffic light.
+    #[must_use]
+    pub const fn corner_radius(h: f32) -> f32 {
+        h / 2.0
+    }
+
+    /// Red (close) traffic-light centre `(H / 2, H / 2)`.
+    #[must_use]
+    pub const fn traffic_light_center(h: f32) -> (f32, f32) {
+        (h / 2.0, h / 2.0)
+    }
+
+    /// Gap between adjacent traffic-light circles `H / 2`.
+    #[must_use]
+    pub const fn traffic_light_spacing(h: f32) -> f32 {
+        h / 2.0
+    }
+
+    /// Centre-to-centre pitch between traffic lights (diameter + spacing).
+    #[must_use]
+    pub const fn traffic_light_pitch(h: f32) -> f32 {
+        traffic_lights::DIAMETER + traffic_light_spacing(h)
+    }
+
+    /// Total width across the three traffic lights.
+    #[must_use]
+    pub const fn traffic_lights_total_width(h: f32) -> f32 {
+        traffic_lights::DIAMETER * 3.0 + traffic_light_spacing(h) * 2.0
     }
 }
 
@@ -45,8 +98,16 @@ pub mod window_metrics {
     /// Recommended horizontal inset for sidebar items (10.0 pt).
     pub const SIDEBAR_CONTENT_INSET: f32 = 10.0;
 
-    /// Standard continuous corner curvature radius for frameless windows (14.0 pt).
-    pub const DEFAULT_CORNER_RADIUS: f32 = 14.0;
+    /// Standard continuous corner curvature radius for frameless windows.
+    ///
+    /// Always the separate-mode `H / 2`, independent of the active layout mode.
+    pub const DEFAULT_CORNER_RADIUS: f32 = super::window_geometry::CORNER_RADIUS;
+
+    /// Border hit zone thickness for edge resize handles (6.0 pt).
+    pub const RESIZE_BORDER_THICKNESS: f32 = 6.0;
+
+    /// Corner hit zone square size for corner resize handles (14.0 pt).
+    pub const RESIZE_CORNER_SIZE: f32 = 14.0;
 }
 
 /// Spring scrollbar dimensions.
@@ -473,6 +534,94 @@ pub mod popover_metrics {
     }
 }
 
+/// Standard Dock & icon layout metrics adhering to Apple concentric squircle geometry.
+pub mod dock {
+    /// Standard base icon width and height (40.0 pt).
+    pub const BASE_ICON_SIZE: f32 = 40.0;
+
+    /// Ratio of icon corner radius to icon dimension (10 / 40 = 0.25).
+    /// Satisfies the authentic 10 : 20 : 10 curvature ratio:
+    /// - 10px corner arc (25%)
+    /// - 20px straight flat edge (50%)
+    /// - 10px corner arc (25%)
+    pub const ICON_CORNER_RATIO: f32 = 0.25;
+
+    /// Ratio of dock padding relative to icon dimension (13 / 40 = 0.325).
+    pub const PADDING_RATIO: f32 = 13.0 / 40.0;
+
+    /// Ratio of icon gap relative to icon dimension (13 / 40 = 0.325).
+    pub const GAP_RATIO: f32 = 13.0 / 40.0;
+
+    /// Standard icon corner radius (10.0 pt).
+    pub const ICON_CORNER_RADIUS: f32 = BASE_ICON_SIZE * ICON_CORNER_RATIO;
+
+    /// Standard inner padding around the dock icons (13.0 pt).
+    pub const DOCK_PADDING: f32 = BASE_ICON_SIZE * PADDING_RATIO;
+
+    /// Standard gap between dock icons (13.0 pt).
+    pub const ICON_GAP: f32 = BASE_ICON_SIZE * GAP_RATIO;
+
+    /// Apple concentric dock corner radius rule:
+    /// R_dock = Padding + R_icon = 13.0 + 10.0 = 23.0 pt.
+    pub const DOCK_CORNER_RADIUS: f32 = DOCK_PADDING + ICON_CORNER_RADIUS;
+
+    /// Standard dock plate height (40.0 + 13.0 * 2 = 66.0 pt).
+    pub const DOCK_HEIGHT: f32 = BASE_ICON_SIZE + DOCK_PADDING * 2.0;
+
+    /// Ratio of dock corner radius relative to icon size (23 / 40 = 0.575).
+    pub const DOCK_CORNER_RADIUS_RATIO: f32 = 23.0 / 40.0;
+
+    /// Computes the concentric dock corner radius for any arbitrary icon radius and container padding:
+    /// `R_dock = padding + icon_radius`.
+    #[inline]
+    #[must_use]
+    pub const fn concentric_dock_radius(icon_radius: f32, padding: f32) -> f32 {
+        icon_radius + padding
+    }
+
+    /// Computes icon corner radius for a given icon size maintaining the 10:20:10 ratio.
+    #[inline]
+    #[must_use]
+    pub fn icon_corner_radius(icon_size: f32) -> f32 {
+        icon_size * ICON_CORNER_RATIO
+    }
+
+    /// Computes dock inner padding for a given icon size maintaining the 13/40 ratio.
+    #[inline]
+    #[must_use]
+    pub fn dock_padding(icon_size: f32) -> f32 {
+        icon_size * PADDING_RATIO
+    }
+
+    /// Computes gap between icons for a given icon size maintaining the 13/40 ratio.
+    #[inline]
+    #[must_use]
+    pub fn icon_gap(icon_size: f32) -> f32 {
+        icon_size * GAP_RATIO
+    }
+
+    /// Computes dock plate height for a given icon size (`icon_size + 2 * padding`).
+    #[inline]
+    #[must_use]
+    pub fn dock_height(icon_size: f32) -> f32 {
+        icon_size + dock_padding(icon_size) * 2.0
+    }
+
+    /// Computes total dock width for N icons given an icon size.
+    #[inline]
+    #[must_use]
+    pub fn dock_width(icon_count: usize, icon_size: f32) -> f32 {
+        if icon_count == 0 {
+            return 0.0;
+        }
+        let padding = dock_padding(icon_size);
+        let gap = icon_gap(icon_size);
+        (icon_count as f32) * icon_size
+            + ((icon_count.saturating_sub(1)) as f32) * gap
+            + padding * 2.0
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::assertions_on_constants,
@@ -482,6 +631,26 @@ pub mod popover_metrics {
 )]
 mod tests {
     use super::menu_metrics::*;
+
+    #[test]
+    fn window_geometry_derives_from_separate_titlebar_height() {
+        use super::window_geometry;
+
+        // H = 32 (measured separate titlebar height).
+        assert_eq!(window_geometry::TITLEBAR_HEIGHT, 32.0);
+
+        // Curvature is always the separate H / 2, independent of layout mode.
+        assert_eq!(window_geometry::CORNER_RADIUS, 16.0);
+        assert_eq!(window_geometry::corner_radius(32.0), 16.0);
+
+        // The red traffic light is concentric with the corner: centre (H/2, H/2).
+        assert_eq!(window_geometry::traffic_light_center(32.0), (16.0, 16.0));
+
+        // Spacing is the separate H / 2 = 16 (fixed across modes).
+        assert_eq!(window_geometry::traffic_light_spacing(32.0), 16.0);
+        assert_eq!(window_geometry::traffic_light_pitch(32.0), 30.0); // 14 + 16
+        assert_eq!(window_geometry::traffic_lights_total_width(32.0), 74.0); // 14*3 + 16*2
+    }
 
     #[test]
     fn test_menu_colorimetry_dark_mode_calibration() {
@@ -608,5 +777,39 @@ mod tests {
             assert!(val <= prev + 1e-5);
             prev = val;
         }
+    }
+
+    #[test]
+    fn test_dock_concentric_proportions() {
+        use super::dock::*;
+
+        // 1. Icon 10:20:10 Curvature Check:
+        assert_eq!(BASE_ICON_SIZE, 40.0);
+        assert_eq!(ICON_CORNER_RADIUS, 10.0);
+        let straight_edge = BASE_ICON_SIZE - ICON_CORNER_RADIUS * 2.0;
+        assert_eq!(straight_edge, 20.0);
+        assert_eq!(ICON_CORNER_RADIUS / BASE_ICON_SIZE, 0.25);
+        assert_eq!(straight_edge / BASE_ICON_SIZE, 0.50);
+
+        // 2. Padding and Gap Check:
+        assert_eq!(DOCK_PADDING, 13.0);
+        assert_eq!(ICON_GAP, 13.0);
+        assert_eq!(PADDING_RATIO, 13.0 / 40.0);
+        assert_eq!(GAP_RATIO, 13.0 / 40.0);
+
+        // 3. Apple Concentric Dock Radius Rule:
+        // R_dock = Padding + R_icon = 13 + 10 = 23.0 pt.
+        assert_eq!(DOCK_CORNER_RADIUS, 23.0);
+        assert_eq!(
+            concentric_dock_radius(ICON_CORNER_RADIUS, DOCK_PADDING),
+            23.0
+        );
+
+        // 4. Plate Height & Width:
+        assert_eq!(DOCK_HEIGHT, 66.0); // 40 + 13 * 2 = 66
+        assert_eq!(dock_height(BASE_ICON_SIZE), 66.0);
+
+        // 9 icons: 9 * 40 + 8 * 13 + 2 * 13 = 360 + 104 + 26 = 490
+        assert_eq!(dock_width(9, BASE_ICON_SIZE), 490.0);
     }
 }
