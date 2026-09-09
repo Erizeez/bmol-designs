@@ -61,10 +61,10 @@ checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 
 [[package]]
 name = "bmol-designs"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "liquid-rs",
- "squircle-rs",
+ "squircle-rs 0.1.2",
 ]
 
 [[package]]
@@ -443,17 +443,20 @@ checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
 [[package]]
 name = "liquid-glass-animation"
 version = "0.1.0"
+source = "git+https://github.com/Erizeez/liquid-rs?tag=v0.1.0#31b1946b4802bb6177cea874e37468bf7110b32f"
 
 [[package]]
 name = "liquid-glass-geometry"
 version = "0.1.0"
+source = "git+https://github.com/Erizeez/liquid-rs?tag=v0.1.0#31b1946b4802bb6177cea874e37468bf7110b32f"
 dependencies = [
- "squircle-rs",
+ "squircle-rs 0.1.1",
 ]
 
 [[package]]
 name = "liquid-glass-render"
 version = "0.1.0"
+source = "git+https://github.com/Erizeez/liquid-rs?tag=v0.1.0#31b1946b4802bb6177cea874e37468bf7110b32f"
 dependencies = [
  "bytemuck",
  "liquid-glass-scene",
@@ -464,6 +467,7 @@ dependencies = [
 [[package]]
 name = "liquid-glass-scene"
 version = "0.1.0"
+source = "git+https://github.com/Erizeez/liquid-rs?tag=v0.1.0#31b1946b4802bb6177cea874e37468bf7110b32f"
 dependencies = [
  "liquid-glass-geometry",
 ]
@@ -471,6 +475,7 @@ dependencies = [
 [[package]]
 name = "liquid-rs"
 version = "0.1.0"
+source = "git+https://github.com/Erizeez/liquid-rs?tag=v0.1.0#31b1946b4802bb6177cea874e37468bf7110b32f"
 dependencies = [
  "liquid-glass-animation",
  "liquid-glass-geometry",
@@ -787,6 +792,11 @@ dependencies = [
 name = "squircle-rs"
 version = "0.1.1"
 source = "git+https://github.com/Erizeez/squircle-rs?tag=v0.1.1#839ae99ef983bafc4595588cb5f114b840d76b3d"
+
+[[package]]
+name = "squircle-rs"
+version = "0.1.2"
+source = "git+https://github.com/Erizeez/squircle-rs?tag=v0.1.2#a472d0eb4bece6a3a8447c2ea0097fd2633735c4"
 
 [[package]]
 name = "static_assertions"
