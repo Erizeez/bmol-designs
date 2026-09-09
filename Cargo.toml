@@ -1,6 +1,6 @@
 [package]
 name = "bmol-designs"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.85"
@@ -13,7 +13,7 @@ keywords = ["design-system", "design-tokens", "liquid-glass", "squircle", "macos
 categories = ["gui"]
 
 [dependencies]
-liquid-rs = { git = "https://github.com/Erizeez/liquid-rs", tag = "v0.1.2" }
+liquid-rs = { git = "https://github.com/Erizeez/liquid-rs", tag = "v0.1.3" }
 squircle-rs = { git = "https://github.com/Erizeez/squircle-rs", tag = "v0.1.2" }
 
 [lints.rust]
