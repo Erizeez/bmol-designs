@@ -12,3 +12,5 @@ pub use metrics::{
 pub use theme::{
     GlassChrome, GlassRole, UiColorScheme, UiCornerStyle, UiPalette, UiTheme,
 };
+#[cfg(feature = "iced")]
+pub use theme::to_iced;
