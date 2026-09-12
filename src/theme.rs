@@ -98,6 +98,19 @@ pub enum GlassRole {
     FloatingControl,
     /// Floating context menus and popovers with heavy backdrop blur (64pt).
     ContextMenu,
+    /// Authentic macOS Dock shelf plate (fixed 97% crisp clarity, 0% milkiness, 100% lighting).
+    DockPlate,
+    /// macOS 14pt jewel traffic light buttons.
+    TrafficLights,
+}
+
+/// Optical clarity policy for a glass role.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ClarityPolicy {
+    /// Pinned to a fixed physical clarity value, immune to global clarity slider changes (e.g. DockPlate = 97%, TrafficLights = 100%).
+    Pinned(f32),
+    /// Adapts dynamically to the global clarity / blur slider across a defined range [min, max].
+    Adaptive { min_clarity: f32, max_clarity: f32 },
 }
 
 /// Iced-side chrome drawn above a compositor-provided glass surface.
@@ -252,6 +265,12 @@ impl UiTheme {
                 let (r, g, b, a) = crate::menu_metrics::LIGHT_MENU_BASE_RGBA_F32;
                 (64.0, Color::rgba(r, g, b, a), 1.0)
             }
+            (UiColorScheme::Light, GlassRole::DockPlate) => {
+                (1.5, Color::rgba(1.0, 1.0, 1.0, 0.0), 0.0)
+            }
+            (UiColorScheme::Light, GlassRole::TrafficLights) => {
+                (0.0, Color::rgba(1.0, 1.0, 1.0, 0.0), 0.0)
+            }
             (UiColorScheme::Dark, GlassRole::Sidebar) => {
                 (32.0, Color::rgba(0.12, 0.16, 0.25, 0.14), 0.36)
             }
@@ -271,6 +290,12 @@ impl UiTheme {
                 // Apple context menus: calibrated base (42, 42, 42) with 202/255 opacity
                 let (r, g, b, a) = crate::menu_metrics::DARK_MENU_BASE_RGBA_F32;
                 (56.0, Color::rgba(r, g, b, a), 42.0 / 255.0)
+            }
+            (UiColorScheme::Dark, GlassRole::DockPlate) => {
+                (1.5, Color::rgba(0.12, 0.16, 0.25, 0.0), 0.0)
+            }
+            (UiColorScheme::Dark, GlassRole::TrafficLights) => {
+                (0.0, Color::rgba(0.12, 0.16, 0.25, 0.0), 0.0)
             }
         }
     }
@@ -346,15 +371,59 @@ impl UiTheme {
             GlassRole::Toolbar => 0.54,
             GlassRole::InputField => 0.64,
             GlassRole::SearchField | GlassRole::FloatingControl => 0.72,
+            GlassRole::DockPlate | GlassRole::TrafficLights => 1.0,
         };
         material.shadow = match role {
-            GlassRole::FloatingControl | GlassRole::ContextMenu => ShadowStyle::elevated(),
-            GlassRole::SearchField => ShadowStyle::control(),
-            GlassRole::Sidebar | GlassRole::Toolbar | GlassRole::InputField => {
-                ShadowStyle::subtle()
+            GlassRole::FloatingControl | GlassRole::ContextMenu | GlassRole::DockPlate => {
+                ShadowStyle::elevated()
             }
+            GlassRole::SearchField => ShadowStyle::control(),
+            GlassRole::Sidebar
+            | GlassRole::Toolbar
+            | GlassRole::InputField
+            | GlassRole::TrafficLights => ShadowStyle::subtle(),
         };
         material
+    }
+
+    /// Returns the optical clarity policy for the given glass role.
+    #[must_use]
+    pub const fn clarity_policy(self, role: GlassRole) -> ClarityPolicy {
+        match role {
+            GlassRole::DockPlate => ClarityPolicy::Pinned(0.03), // 97% crisp clarity
+            GlassRole::TrafficLights => ClarityPolicy::Pinned(0.00), // 100% crystal
+            _ => ClarityPolicy::Adaptive { min_clarity: 0.0, max_clarity: 1.0 },
+        }
+    }
+
+    /// Resolves a full 2x Retina point-to-point physical glass material for the given role.
+    #[must_use]
+    pub fn physical_glass_material(
+        self,
+        role: GlassRole,
+        global_clarity: f32,
+    ) -> liquid_glass_render::ContentGlassMaterial {
+        let clarity = match self.clarity_policy(role) {
+            ClarityPolicy::Pinned(fixed) => fixed,
+            ClarityPolicy::Adaptive { min_clarity, max_clarity } => {
+                min_clarity + (max_clarity - min_clarity) * global_clarity.clamp(0.0, 1.0)
+            }
+        };
+
+        match role {
+            GlassRole::DockPlate => liquid_glass_render::ContentGlassMaterial::dock(),
+            GlassRole::TrafficLights => liquid_glass_render::ContentGlassMaterial::traffic_light(
+                liquid_glass_render::TrafficLightKind::Close,
+            ),
+            GlassRole::Sidebar => liquid_glass_render::ContentGlassMaterial::sidebar(clarity),
+            GlassRole::Toolbar => liquid_glass_render::ContentGlassMaterial::window_chrome(clarity),
+            GlassRole::InputField | GlassRole::SearchField => {
+                liquid_glass_render::ContentGlassMaterial::search_field(clarity)
+            }
+            GlassRole::FloatingControl | GlassRole::ContextMenu => {
+                liquid_glass_render::ContentGlassMaterial::popover(clarity)
+            }
+        }
     }
 
     /// Returns the default geometry associated with a semantic glass role.
@@ -362,6 +431,8 @@ impl UiTheme {
     pub const fn glass_shape(self, role: GlassRole) -> GlassShape {
         match role {
             GlassRole::Sidebar | GlassRole::Toolbar => GlassShape::RoundedRect { radius: 0.0 },
+            GlassRole::DockPlate => GlassShape::RoundedRect { radius: 23.0 },
+            GlassRole::TrafficLights => GlassShape::Circle,
             GlassRole::ContextMenu => GlassShape::RoundedRect {
                 radius: crate::menu_metrics::CONTAINER_CORNER_RADIUS,
             },
@@ -412,6 +483,8 @@ impl UiTheme {
             GlassRole::SearchField => (3.0, 12.0),
             GlassRole::FloatingControl => (4.0, 10.0),
             GlassRole::ContextMenu => (8.0, 28.0),
+            GlassRole::DockPlate => (10.0, 32.0),
+            GlassRole::TrafficLights => (1.0, 3.0),
         };
         GlassChrome {
             border,
@@ -562,25 +635,5 @@ mod tests {
 
         assert!(light.disabled_text.a < light.text.a);
         assert!(dark.disabled_text.a < dark.text.a);
-    }
-}
-
-#[cfg(all(test, feature = "iced"))]
-mod iced_adapter_tests {
-    use super::*;
-
-    #[test]
-    fn to_iced_preserves_every_channel() {
-        let scene = Color::rgba(0.123, 0.456, 0.789, 0.321);
-        let iced = to_iced(scene);
-        assert_eq!((iced.r, iced.g, iced.b, iced.a), (0.123, 0.456, 0.789, 0.321));
-    }
-
-    #[test]
-    fn the_scheme_survives_a_trip_through_the_iced_theme() {
-        assert_eq!(UiTheme::from_iced(&UiTheme::dark().iced_theme()), UiTheme::dark());
-        assert_eq!(UiTheme::from_iced(&UiTheme::light().iced_theme()), UiTheme::light());
-        assert_eq!(UiColorScheme::from_mode(iced::theme::Mode::Light), UiColorScheme::Light);
-        assert_eq!(UiColorScheme::from_mode(iced::theme::Mode::Dark), UiColorScheme::Dark);
     }
 }

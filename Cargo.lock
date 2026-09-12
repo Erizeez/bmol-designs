@@ -110,6 +110,7 @@ name = "bmol-designs"
 version = "0.1.5"
 dependencies = [
  "iced",
+ "liquid-glass-render",
  "liquid-rs",
  "squircle-rs",
 ]
