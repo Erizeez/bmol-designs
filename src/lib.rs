@@ -10,7 +10,7 @@ pub use metrics::{
     traffic_lights, window_geometry, window_metrics,
 };
 pub use theme::{
-    GlassChrome, GlassRole, UiColorScheme, UiCornerStyle, UiPalette, UiTheme,
+    ClarityPolicy, GlassChrome, GlassRole, UiColorScheme, UiCornerStyle, UiPalette, UiTheme,
 };
 #[cfg(feature = "iced")]
 pub use theme::to_iced;
