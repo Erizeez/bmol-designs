@@ -15,6 +15,12 @@ categories = ["gui"]
 [dependencies]
 liquid-rs = { git = "https://github.com/Erizeez/liquid-rs", branch = "main" }
 squircle-rs = { git = "https://github.com/Erizeez/squircle-rs", tag = "v0.1.2" }
+iced = { version = "0.14.0", default-features = false, features = ["thread-pool"], optional = true }
+
+[features]
+# The toolkit-facing adapters: `UiColorScheme::from_mode`, `UiTheme::from_iced`,
+# `UiTheme::iced_theme` and `to_iced`. Everything else is toolkit-free.
+iced = ["dep:iced"]
 
 [lints.rust]
 unsafe_code = "forbid"
