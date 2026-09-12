@@ -564,3 +564,23 @@ mod tests {
         assert!(dark.disabled_text.a < dark.text.a);
     }
 }
+
+#[cfg(all(test, feature = "iced"))]
+mod iced_adapter_tests {
+    use super::*;
+
+    #[test]
+    fn to_iced_preserves_every_channel() {
+        let scene = Color::rgba(0.123, 0.456, 0.789, 0.321);
+        let iced = to_iced(scene);
+        assert_eq!((iced.r, iced.g, iced.b, iced.a), (0.123, 0.456, 0.789, 0.321));
+    }
+
+    #[test]
+    fn the_scheme_survives_a_trip_through_the_iced_theme() {
+        assert_eq!(UiTheme::from_iced(&UiTheme::dark().iced_theme()), UiTheme::dark());
+        assert_eq!(UiTheme::from_iced(&UiTheme::light().iced_theme()), UiTheme::light());
+        assert_eq!(UiColorScheme::from_mode(iced::theme::Mode::Light), UiColorScheme::Light);
+        assert_eq!(UiColorScheme::from_mode(iced::theme::Mode::Dark), UiColorScheme::Dark);
+    }
+}
